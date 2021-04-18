@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Esourcing.UI.Controllers
@@ -107,5 +108,52 @@ namespace Esourcing.UI.Controllers
             _signInManager.SignOutAsync();
             return RedirectToAction("Login");
         }
+
+        #region SocialMediaOperations
+
+        public IActionResult FacebookLogin(string returnUrl)
+        {
+            string redirectUrl = Url.Action("SocialMediaResponse", "Home", new { returnUrl = returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Facebook", redirectUrl);
+            return new ChallengeResult("Facebook", properties);
+        }
+
+        public async Task<IActionResult> SocialMediaResponse(string returnUrl)
+        {
+            var loginInfo = await _signInManager.GetExternalLoginInfoAsync();
+            if (loginInfo == null)
+                return RedirectToAction("Signup");
+            else
+            {
+                var result = await _signInManager.ExternalLoginSignInAsync(loginInfo.LoginProvider, loginInfo.ProviderKey, true);
+                if (result.Succeeded)
+                    return Redirect(returnUrl);
+                else
+                {
+                    if (loginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+                    {
+                        AppUser user = new AppUser()
+                        {
+                            Email = loginInfo.Principal.FindFirstValue(ClaimTypes.Email),
+                            UserName= loginInfo.Principal.FindFirstValue(ClaimTypes.Name)
+                        };
+                        var createResult = await _userManager.CreateAsync(user);
+                        if (createResult.Succeeded)
+                        {
+                            var identityLogin = await _userManager.AddLoginAsync(user, loginInfo);
+                            if (identityLogin.Succeeded)
+                            {
+                                await _signInManager.SignInAsync(user, true);
+                                return Redirect(returnUrl);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return RedirectToAction("Signup");
+        }
+
+        #endregion
     }
 }

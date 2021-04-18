@@ -38,6 +38,8 @@ namespace Esourcing.UI
                 opt.Password.RequireLowercase = false;
                 opt.Password.RequireUppercase = false;
                 opt.Password.RequireDigit = false;
+
+                opt.User.AllowedUserNameCharacters = "abcçdefgðhýijklmnoprsþtuüvyzxqABCDEFGÐHIÝJKLMNOÖPRSÞTUÜVYZXQ123456789._- ";
             }).AddDefaultTokenProviders().AddEntityFrameworkStores<WebAppContext>();
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
@@ -65,6 +67,12 @@ namespace Esourcing.UI
             {
                 options.LoginPath = $"/Home/Login";
                 options.LogoutPath = $"/Home/Logout";
+            });
+
+            services.AddAuthentication().AddFacebook(opt => 
+            {
+                opt.AppId = "810807309441065";
+                opt.AppSecret = "91f73c1b602e8b6ac45f623b63b724e8";
             });
 
             services.AddHttpClient();
